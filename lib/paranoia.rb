@@ -26,7 +26,7 @@ module Paranoia
 
     def with_deleted
       if ActiveRecord::VERSION::STRING >= "4.1"
-        return unscope where: paranoia_column
+        return unscope where: paranoia_column_with_table
       end
       all.tap { |x| x.default_scoped = false }
     end
@@ -239,12 +239,13 @@ ActiveSupport.on_load(:active_record) do
       alias_method :destroy_without_paranoia, :destroy
 
       include Paranoia
-      class_attribute :paranoia_column, :paranoia_sentinel_value
+      class_attribute :paranoia_column, :paranoia_column_with_table, :paranoia_sentinel_value
 
       self.paranoia_column = (options[:column] || :deleted_at).to_s
+      self.paranoia_column_with_table = "#{self.table_name}.#{self.paranoia_column}"
       self.paranoia_sentinel_value = options.fetch(:sentinel_value) { Paranoia.default_sentinel_value }
       def self.paranoia_scope
-        where(paranoia_column => paranoia_sentinel_value)
+        where(paranoia_column_with_table => paranoia_sentinel_value)
       end
       class << self; alias_method :without_deleted, :paranoia_scope end
 
